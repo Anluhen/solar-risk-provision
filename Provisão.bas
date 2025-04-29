@@ -1,9 +1,13 @@
 Attribute VB_Name = "Provisão"
 ' ----- Version -----
-'        1.2.1
+'        1.4.0
 ' -------------------
 
 Sub SaveData(Optional ShowOnMacroList As Boolean = False)
+    
+    Dim colMap As Object
+    Set colMap = GetColumnHeadersMapping()
+    
     Dim wsForm As Worksheet, wsDados As Worksheet
     Dim dadosTable As ListObject
     Dim tblRow As ListRow
@@ -29,7 +33,7 @@ Sub SaveData(Optional ShowOnMacroList As Boolean = False)
     
     ' If ComboBoxID is not empty, prompt the user
     If Trim(newID) <> "" Then
-        userResponse = MsgBox("Esse aditivo já foi cadastrado. Deseja sobrescrever?", vbYesNoCancel + vbQuestion, "Confirmação")
+        userResponse = MsgBox("Já existe um aditivo com essa ID. Deseja sobreescrever?", vbYesNoCancel + vbQuestion, "Confirmação")
 
         Select Case userResponse
             Case vbYes
@@ -59,49 +63,68 @@ Sub SaveData(Optional ShowOnMacroList As Boolean = False)
     ' Assign values to the new row
     With tblRow.Range
         ' Set new ID
-        .Cells(1, 1).Value = newID ' First column value
+        .Cells(1, colMap("ID")).Value = newID ' First column value
         
         ' Read column B values
-        .Cells(1, 2).Value = wsForm.Range("B6").Value
-        .Cells(1, 3).Value = wsForm.Range("B10").Value
-        .Cells(1, 4).Value = wsForm.Range("B14").Value
-        .Cells(1, 5).Value = wsForm.Range("B18").Value
-        .Cells(1, 6).Value = wsForm.Range("B24").Value
-        .Cells(1, 7).Value = wsForm.Range("B28").Value
-        .Cells(1, 8).Value = wsForm.Range("B32").Value
-        .Cells(1, 9).Value = wsForm.Range("B36").Value
-        If .Cells(1, 10).Formula = "" Then
-            .Cells(1, 10).Formula = "=IFERROR([@[Valor MDS]]/[@[Custo Atual Disponível]];"")"
+        .Cells(1, colMap("Nome da Obra")).Value = wsForm.Range("B6").Value
+        .Cells(1, colMap("Cliente")).Value = wsForm.Range("B10").Value
+        .Cells(1, colMap("Tipo de Empreendimento")).Value = wsForm.Range("B14").Value
+        .Cells(1, colMap("PM Responsável")).Value = wsForm.Range("B18").Value
+        .Cells(1, colMap("PEP")).Value = wsForm.Range("B22").Value
+        .Cells(1, colMap("DR Atividade")).Value = wsForm.Range("B28").Value
+        .Cells(1, colMap("Valor MDS")).Value = wsForm.Range("B32").Value
+        .Cells(1, colMap("Valor MDS Líquido")).Formula = "=[@[Valor MDS]]*0.9075"
+        .Cells(1, colMap("Custo COT")).Value = wsForm.Range("B36").Value
+        .Cells(1, colMap("Custo Atual Disponível")).Value = wsForm.Range("B40").Value
+    
+        If .Cells(1, colMap("Impacto no COT")).Formula = "" Then
+            .Cells(1, colMap("Impacto no COT")).Formula = "=IFERROR([@[Valor MDS]]/[@[Custo Atual Disponível]];"")"
         End If
-        If .Cells(1, 11).Formula = "" Then
-            .Cells(1, 11).Formula = "=[@[Custo Atual Disponível]]-[@[Valor MDS]]"
+        If .Cells(1, colMap("Saldo Residual")).Formula = "" Then
+            .Cells(1, colMap("Saldo Residual")).Formula = "=[@[Custo Atual Disponível]]-[@[Valor MDS]]"
         End If
-        
+    
         ' Read column D values
-        .Cells(1, 12).Value = wsForm.Range("D6").Value
-        .Cells(1, 13).Value = wsForm.Range("D10").Value
-        .Cells(1, 14).Value = wsForm.Range("D14").Value
-        .Cells(1, 15).Value = wsForm.Range("D18").Value
-        .Cells(1, 16).Value = wsForm.Range("D22").Value
-        .Cells(1, 17).Value = wsForm.Range("D26").Value
-        .Cells(1, 18).Value = wsForm.Range("D30").Value
-        .Cells(1, 19).Value = wsForm.Range("D34").Value
-        .Cells(1, 20).Value = wsForm.Range("D38").Value
+        .Cells(1, colMap("Descrição Breve do Aditivo")).Value = wsForm.Range("D6").Value
+        .Cells(1, colMap("Justificativa do Aditivo")).Value = wsForm.Range("D10").Value
         
+        If wsForm.Range("D14").Value < 0.4 Then
+            .Cells(1, colMap("Estágio da Obra")).Value = _
+                Format(wsForm.Range("D14").Value, "##.00%") & " (Fase Inicial)"
+        ElseIf wsForm.Range("D14").Value < 0.8 Then
+            .Cells(1, colMap("Estágio da Obra")).Value = _
+                Format(wsForm.Range("D14").Value, "##.00%") & " (Fase Intermediária)"
+        Else
+            .Cells(1, colMap("Estágio da Obra")).Value = _
+                Format(wsForm.Range("D14").Value, "##.00%") & " (Fase Final)"
+        End If
+        
+        .Cells(1, colMap("Fase da Obra")).Formula = _
+            "=IF([@[Estágio da Obra]]<0.4,""Inicial"",IF([@[Estágio da Obra]]<0.8,""Intermediário"",""Final""))"
+        .Cells(1, colMap("Fator Motivador")).Value = wsForm.Range("D18").Value
+        .Cells(1, colMap("Detalhamento do Fator Motivador")).Value = wsForm.Range("D22").Value
+        .Cells(1, colMap("Repasssar os custos ao cliente")).Value = wsForm.Range("D26").Value
+        .Cells(1, colMap("Justificativa do não repasse")).Value = wsForm.Range("D30").Value
+        .Cells(1, colMap("Prestador de Serviço (Quem executou)")).Value = wsForm.Range("D34").Value
+        .Cells(1, colMap("Outros Riscos")).Value = wsForm.Range("D38").Value
+    
         ' Read column F values
-        .Cells(1, 21).Value = wsForm.Range("F6").Value
-        .Cells(1, 22).Value = wsForm.Range("F10").Value
-        .Cells(1, 23).Value = wsForm.Range("F14").Value
-        .Cells(1, 24).Value = wsForm.Range("F18").Value
-        .Cells(1, 25).Value = "" 'Clear date if ovewriten in case an e-mail was already sent
-        .Cells(1, 26).Value = wsForm.Range("F22").Value
-        
+        .Cells(1, colMap("Status")).Value = wsForm.Range("F6").Value
+        .Cells(1, colMap("Número da RFP")).Value = wsForm.Range("F10").Value
+        .Cells(1, colMap("Responsável Suprimentos")).Value = wsForm.Range("F14").Value
+        .Cells(1, colMap("Pedido de Compra")).Value = wsForm.Range("F18").Value
+        .Cells(1, colMap("Data da Solicitação")).Value = ""  ' Clear date if overwritten in case an e-mail was already sent
+        .Cells(1, colMap("Observações")).Value = wsForm.Range("F22").Value
     End With
     
     ' MsgBox "Dados salvos com sucesso!", vbInformation
 End Sub
 
 Sub RetrieveDataFromName(Optional ShowOnMacroList As Boolean = False)
+    
+    Dim colMap As Object
+    Set colMap = GetColumnHeadersMapping()
+    
     Dim wsForm As Worksheet, wsDados As Worksheet
     Dim dadosTable As ListObject
     Dim foundRow As Range
@@ -136,7 +159,7 @@ Sub RetrieveDataFromName(Optional ShowOnMacroList As Boolean = False)
     ' Search for the matching row
     Set foundRow = Nothing
     For Each cell In dadosTable.ListColumns(2).DataBodyRange
-        If cell.Value & " - " & cell.Offset(0, 1).Value & " - " & cell.Offset(0, 11).Value = searchName Then
+        If cell.Value & " - " & cell.Cells(1, colMap("Cliente") - 1).Value & " - " & cell.Cells(1, colMap("Descrição Breve do Aditivo") - 1).Value = searchName Then
             Set foundRow = cell.Offset(0, -1)
             Exit For
         End If
@@ -150,39 +173,44 @@ Sub RetrieveDataFromName(Optional ShowOnMacroList As Boolean = False)
     
     ' Populate worksheet with retrieved data
     With wsForm
-        wsForm.OLEObjects("ComboBoxID").Object.Value = foundRow.Value
-    
+        wsForm.OLEObjects("ComboBoxName").Object.Value = foundRow.Cells(1, colMap("Nome da Obra")).Value & " - " & foundRow.Cells(1, colMap("Cliente")).Value & " - " & foundRow.Cells(1, colMap("Descrição Breve do Aditivo")).Value
+        
         ' Read column B values
-        .Range("B6").Value = foundRow.Offset(0, 1).Value
-        .Range("B10").Value = foundRow.Offset(0, 2).Value
-        .Range("B14").Value = foundRow.Offset(0, 3).Value
-        .Range("B18").Value = foundRow.Offset(0, 4).Value
-        .Range("B24").Value = foundRow.Offset(0, 5).Value
-        .Range("B28").Value = foundRow.Offset(0, 6).Value
-        .Range("B32").Value = foundRow.Offset(0, 7).Value
-        .Range("B36").Value = foundRow.Offset(0, 8).Value
+        .Range("B6").Value = foundRow.Cells(1, colMap("Nome da Obra")).Value
+        .Range("B10").Value = foundRow.Cells(1, colMap("Cliente")).Value
+        .Range("B14").Value = foundRow.Cells(1, colMap("Tipo de Empreendimento")).Value
+        .Range("B18").Value = foundRow.Cells(1, colMap("PM Responsável")).Value
+        .Range("B22").Value = foundRow.Cells(1, colMap("PEP")).Value
+        .Range("B28").Value = foundRow.Cells(1, colMap("DR Atividade")).Value
+        .Range("B32").Value = foundRow.Cells(1, colMap("Valor MDS")).Value
+        .Range("B36").Value = foundRow.Cells(1, colMap("Custo COT")).Value
+        .Range("B40").Value = foundRow.Cells(1, colMap("Custo Atual Disponível")).Value
         
         ' Read column D values
-        .Range("D6").Value = foundRow.Offset(0, 11).Value
-        .Range("D10").Value = foundRow.Offset(0, 12).Value
-        .Range("D14").Value = foundRow.Offset(0, 13).Value
-        .Range("D18").Value = foundRow.Offset(0, 14).Value
-        .Range("D22").Value = foundRow.Offset(0, 15).Value
-        .Range("D26").Value = foundRow.Offset(0, 16).Value
-        .Range("D30").Value = foundRow.Offset(0, 17).Value
-        .Range("D34").Value = foundRow.Offset(0, 18).Value
-        .Range("D38").Value = foundRow.Offset(0, 19).Value
+        .Range("D6").Value = foundRow.Cells(1, colMap("Descrição Breve do Aditivo")).Value
+        .Range("D10").Value = foundRow.Cells(1, colMap("Justificativa do Aditivo")).Value
+        .Range("D14").Value = foundRow.Cells(1, colMap("Estágio da Obra")).Value
+        .Range("D18").Value = foundRow.Cells(1, colMap("Fator Motivador")).Value
+        .Range("D22").Value = foundRow.Cells(1, colMap("Detalhamento do Fator Motivador")).Value
+        .Range("D26").Value = foundRow.Cells(1, colMap("Repasssar os custos ao cliente")).Value
+        .Range("D30").Value = foundRow.Cells(1, colMap("Justificativa do não repasse")).Value
+        .Range("D34").Value = foundRow.Cells(1, colMap("Prestador de Serviço (Quem executou)")).Value
+        .Range("D38").Value = foundRow.Cells(1, colMap("Outros Riscos")).Value
         
         ' Read column F values
-        .Range("F6").Value = foundRow.Offset(0, 20).Value
-        .Range("F10").Value = foundRow.Offset(0, 21).Value
-        .Range("F14").Value = foundRow.Offset(0, 22).Value
-        .Range("F18").Value = foundRow.Offset(0, 23).Value
-        .Range("F22").Value = foundRow.Offset(0, 25).Value
+        .Range("F6").Value = foundRow.Cells(1, colMap("Status")).Value
+        .Range("F10").Value = foundRow.Cells(1, colMap("Número da RFP")).Value
+        .Range("F14").Value = foundRow.Cells(1, colMap("Responsável Suprimentos")).Value
+        .Range("F18").Value = foundRow.Cells(1, colMap("Pedido de Compra")).Value
+        .Range("F22").Value = foundRow.Cells(1, colMap("Observações")).Value
     End With
 End Sub
 
 Sub RetrieveDataFromID(Optional ShowOnMacroList As Boolean = False)
+
+    Dim colMap As Object
+    Set colMap = GetColumnHeadersMapping()
+    
     Dim wsForm As Worksheet, wsDados As Worksheet
     Dim dadosTable As ListObject
     Dim foundRow As Range
@@ -228,41 +256,43 @@ Sub RetrieveDataFromID(Optional ShowOnMacroList As Boolean = False)
     
     ' Populate worksheet with retrieved data
     With wsForm
-        wsForm.OLEObjects("ComboBoxName").Object.Value = foundRow.Offset(0, 1).Value & " - " & foundRow.Offset(0, 2).Value & " - " & foundRow.Offset(0, 11).Value
+        wsForm.OLEObjects("ComboBoxName").Object.Value = foundRow.Cells(1, colMap("Nome da Obra")).Value & " - " & foundRow.Cells(1, colMap("Cliente")).Value & " - " & foundRow.Cells(1, colMap("Descrição Breve do Aditivo")).Value
         
         ' Read column B values
-        .Range("B6").Value = foundRow.Offset(0, 1).Value
-        .Range("B10").Value = foundRow.Offset(0, 2).Value
-        .Range("B14").Value = foundRow.Offset(0, 3).Value
-        .Range("B18").Value = foundRow.Offset(0, 4).Value
-        .Range("B24").Value = foundRow.Offset(0, 5).Value
-        .Range("B28").Value = foundRow.Offset(0, 6).Value
-        .Range("B32").Value = foundRow.Offset(0, 7).Value
-        .Range("B36").Value = foundRow.Offset(0, 8).Value
+        .Range("B6").Value = foundRow.Cells(1, colMap("Nome da Obra")).Value
+        .Range("B10").Value = foundRow.Cells(1, colMap("Cliente")).Value
+        .Range("B14").Value = foundRow.Cells(1, colMap("Tipo de Empreendimento")).Value
+        .Range("B18").Value = foundRow.Cells(1, colMap("PM Responsável")).Value
+        .Range("B22").Value = foundRow.Cells(1, colMap("PEP")).Value
+        .Range("B28").Value = foundRow.Cells(1, colMap("DR Atividade")).Value
+        .Range("B32").Value = foundRow.Cells(1, colMap("Valor MDS")).Value
+        .Range("B36").Value = foundRow.Cells(1, colMap("Custo COT")).Value
+        .Range("B40").Value = foundRow.Cells(1, colMap("Custo Atual Disponível")).Value
         
         ' Read column D values
-        .Range("D6").Value = foundRow.Offset(0, 11).Value
-        .Range("D10").Value = foundRow.Offset(0, 12).Value
-        .Range("D14").Value = foundRow.Offset(0, 13).Value
-        .Range("D18").Value = foundRow.Offset(0, 14).Value
-        .Range("D22").Value = foundRow.Offset(0, 15).Value
-        .Range("D26").Value = foundRow.Offset(0, 16).Value
-        .Range("D30").Value = foundRow.Offset(0, 17).Value
-        .Range("D34").Value = foundRow.Offset(0, 18).Value
-        .Range("D38").Value = foundRow.Offset(0, 19).Value
+        .Range("D6").Value = foundRow.Cells(1, colMap("Descrição Breve do Aditivo")).Value
+        .Range("D10").Value = foundRow.Cells(1, colMap("Justificativa do Aditivo")).Value
+        .Range("D14").Value = foundRow.Cells(1, colMap("Estágio da Obra")).Value
+        .Range("D18").Value = foundRow.Cells(1, colMap("Fator Motivador")).Value
+        .Range("D22").Value = foundRow.Cells(1, colMap("Detalhamento do Fator Motivador")).Value
+        .Range("D26").Value = foundRow.Cells(1, colMap("Repasssar os custos ao cliente")).Value
+        .Range("D30").Value = foundRow.Cells(1, colMap("Justificativa do não repasse")).Value
+        .Range("D34").Value = foundRow.Cells(1, colMap("Prestador de Serviço (Quem executou)")).Value
+        .Range("D38").Value = foundRow.Cells(1, colMap("Outros Riscos")).Value
         
         ' Read column F values
-        .Range("F6").Value = foundRow.Offset(0, 20).Value
-        .Range("F10").Value = foundRow.Offset(0, 21).Value
-        .Range("F14").Value = foundRow.Offset(0, 22).Value
-        .Range("F18").Value = foundRow.Offset(0, 23).Value
-        .Range("F22").Value = foundRow.Offset(0, 25).Value
+        .Range("F6").Value = foundRow.Cells(1, colMap("Status")).Value
+        .Range("F10").Value = foundRow.Cells(1, colMap("Número da RFP")).Value
+        .Range("F14").Value = foundRow.Cells(1, colMap("Responsável Suprimentos")).Value
+        .Range("F18").Value = foundRow.Cells(1, colMap("Pedido de Compra")).Value
+        .Range("F22").Value = foundRow.Cells(1, colMap("Observações")).Value
     End With
 End Sub
 
 Sub EnviarParaAprovação(Optional ShowOnMacroList As Boolean = False)
-
-    SaveData
+    
+    Dim colMap As Object
+    Set colMap = GetColumnHeadersMapping()
     
     Dim wsForm As Worksheet, wsDados As Worksheet
     Dim dadosTable As ListObject
@@ -305,6 +335,12 @@ Sub EnviarParaAprovação(Optional ShowOnMacroList As Boolean = False)
     ' Get the ID to search from ComboBox
     searchID = wsForm.OLEObjects("ComboBoxID").Object.Value
     
+    ' Stop if data not saved
+    If searchID = "" Then
+        MsgBox "Desculpe, salve os dados antes de gerar o e-mail", vbInformation, "Atenção"
+        Exit Sub
+    End If
+    
     ' Search for the ID in the first column of the table
     Set foundRow = Nothing
     On Error Resume Next
@@ -317,8 +353,8 @@ Sub EnviarParaAprovação(Optional ShowOnMacroList As Boolean = False)
         Exit Sub
     End If
     
-    If foundRow.Offset(0, 24).Value <> "" Then
-        userResponse = MsgBox("O e-mail de aprovação para esses dados já foi enviado em " & foundRow.Offset(0, 25).Value & ". Deseja enviar novamente?", vbYesNo)
+    If foundRow.Cells(1, colMap("Data da Solicitação")).Value <> "" Then
+        userResponse = MsgBox("O e-mail de aprovação para esses dados já foi enviado em " & foundRow.Cells(1, colMap("Data da Solicitação")).Value & ". Deseja enviar novamente?", vbYesNo)
         If userResponse = vbNo Then
             MsgBox "Envio de e-mail cancelado!", vbInformation
             Exit Sub
@@ -341,79 +377,82 @@ Sub EnviarParaAprovação(Optional ShowOnMacroList As Boolean = False)
     HTMLbody = ""
     HTMLbody = HTMLbody & "<p>" & greeting & ", Moretti</p>"
     HTMLbody = HTMLbody & "<p>Solicito sua confirmação (“De acordo”) quanto aos valores abaixo, para que possamos dar continuidade à contratação da " & _
-        foundRow.Offset(0, 18).Value & " para o serviço descrito a seguir: " & foundRow.Offset(0, 11).Value & " da " & foundRow.Offset(0, 1).Value & _
-        " no valor de " & Format(foundRow.Offset(0, 6).Value, "R$ #,##0.00") & ". Todos os valores apresentados abaixo foram analisados pela equipe de Implantação/Suprimentos e considerado procedentes." & "</p>"
+        foundRow.Cells(1, colMap("Prestador de Serviço (Quem executou)")).Value & " para o serviço descrito a seguir: " & foundRow.Cells(1, colMap("Descrição Breve do Aditivo")).Value & " da " & foundRow.Cells(1, colMap("Nome da Obra")).Value & _
+        " no valor de " & Format(foundRow.Cells(1, colMap("Valor MDS")).Value, "R$ #,##0.00") & ". Todos os valores apresentados abaixo foram analisados pela equipe de Implantação/Suprimentos e considerado procedentes." & "</p>"
     
     ' Start the table
     HTMLbody = HTMLbody & "<table border='1' style='border-collapse: collapse; font-size: 10pt;'>"
     
     ' Title row
     HTMLbody = HTMLbody & "<tr style='background-color:#d9d9d9;'>"
-    HTMLbody = HTMLbody & "<td colspan='2'><b>Provisão de Riscos" & " - " & foundRow.Offset(0, 1).Value & " - " & foundRow.Offset(0, 2).Value & "</b></td>"
+    HTMLbody = HTMLbody & "<td colspan='2'><b>Provisão de Riscos" & " - " & foundRow.Cells(1, colMap("Nome da Obra")).Value & " - " & foundRow.Cells(1, colMap("Cliente")).Value & "</b></td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 1) VALOR MDS
     HTMLbody = HTMLbody & "<tr>"
     HTMLbody = HTMLbody & "<td><b>VALOR MDS</b></td>"
     ' Example: reading from the "Dados" sheet. Adjust the range as needed.
-    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Offset(0, 6).Value, "R$ #,##0.00") & " - que representa " & Format(foundRow.Offset(0, 9).Value, "##,##%") & " do Custo Atual disponível na Provisão de Riscos</td>"
+    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Valor MDS")).Value, "R$ #,##0.00") & " - que representa " & Format(foundRow.Cells(1, colMap("Impacto no COT")).Value, "#0.00%") & " do Custo Atual disponível na Provisão de Riscos</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 2) CUSTO COT DO DR
     HTMLbody = HTMLbody & "<tr>"
-    HTMLbody = HTMLbody & "<td><b>CUSTO COT</b></td>"
-    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Offset(0, 7).Value, "R$ #,##0.00") & "</td>"
+    HTMLbody = HTMLbody & "<td><b>VALOR ORIGINAL DO DR (COT)</b></td>"
+    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Custo COT")).Value, "R$ #,##0.00") & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 3) CUSTO ATUAL DISPONÍVEL DO DR
     HTMLbody = HTMLbody & "<tr>"
-    HTMLbody = HTMLbody & "<td><b>CUSTO ATUAL DISPONÍVEL</b></td>"
-    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Offset(0, 8).Value, "R$ #,##0.00") & "</td>"
+    HTMLbody = HTMLbody & "<td><b>SALDO ATUAL DO DR</b></td>"
+    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Custo Atual Disponível")).Value, "R$ #,##0.00") & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 4) SALDO RESIDUAL DO DR
     HTMLbody = HTMLbody & "<tr>"
-    HTMLbody = HTMLbody & "<td><b>SALDO RESIDUAL DO DR</b></td>"
-    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Offset(0, 10).Value, "R$ #,##0.00") & "</td>"
+    HTMLbody = HTMLbody & "<td><b>SALDO RESIDUAL DO DR APÓS MDS</b></td>"
+    HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Saldo Residual")).Value, "R$ #,##0.00") & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 5) Inserido no DR/tarefa
     HTMLbody = HTMLbody & "<tr>"
     HTMLbody = HTMLbody & "<td><b>INSERIDO NO DR/TAREFA:</b></td>"
-    HTMLbody = HTMLbody & "<td>" & foundRow.Offset(0, 5).Value & "</td>"
+    HTMLbody = HTMLbody & "<td>" & foundRow.Cells(1, colMap("DR Atividade")).Value & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 6) Justificativa
     HTMLbody = HTMLbody & "<tr>"
     HTMLbody = HTMLbody & "<td><b>JUSTIFICATIVA:</b></td>"
-    HTMLbody = HTMLbody & "<td>" & foundRow.Offset(0, 12).Value & "</td>"
+    HTMLbody = HTMLbody & "<td>" & foundRow.Cells(1, colMap("Justificativa do Aditivo")).Value & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 7) Outros riscos já mapeados
     HTMLbody = HTMLbody & "<tr>"
     HTMLbody = HTMLbody & "<td><b>OUTROS RISCOS JÁ MAPEADOS:</b></td>"
-    HTMLbody = HTMLbody & "<td>" & foundRow.Offset(0, 19).Value & "</td>"
+    HTMLbody = HTMLbody & "<td>" & foundRow.Cells(1, colMap("Outros Riscos")).Value & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 8) Estágio da Obra
     HTMLbody = HTMLbody & "<tr>"
     HTMLbody = HTMLbody & "<td><b>ESTÁGIO DA OBRA:</b></td>"
     
-    If foundRow.Offset(0, 13).Value < 0.4 Then
-        faseObra = "(Fase Inicial)"
-    ElseIf foundRow.Offset(0, 13).Value < 0.8 Then
-        faseObra = "(Fase Intermediária)"
+    If IsNumeric(foundRow.Cells(1, colMap("Estágio da Obra")).Value) Then
+        If foundRow.Cells(1, colMap("Estágio da Obra")).Value < 0.4 Then
+            HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Estágio da Obra")).Value, "##.00%") & " (Fase Inicial)" & "</td>"
+        ElseIf foundRow.Cells(1, colMap("Estágio da Obra")).Value < 0.8 Then
+            HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Estágio da Obra")).Value, "##.00%") & " (Fase Intermediária)" & "</td>"
+        Else
+            HTMLbody = HTMLbody & "<td>" & Format(foundRow.Cells(1, colMap("Estágio da Obra")).Value, "##.00%") & " (Fase Final)" & "</td>"
+        End If
     Else
-        faseObra = "(Fase Final)"
+        HTMLbody = HTMLbody & "<td>" & foundRow.Cells(1, colMap("Estágio da Obra")).Value & "</td>"
     End If
 
-    HTMLbody = HTMLbody & "<td>" & foundRow.Offset(0, 13).Value * 100 & "% " & faseObra & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' 9) Ação necessária
     HTMLbody = HTMLbody & "<tr>"
     HTMLbody = HTMLbody & "<td><b>AÇÃO NECESSÁRIA:</b></td>"
-    HTMLbody = HTMLbody & "<td>" & foundRow.Offset(0, 15).Value & "</td>"
+    HTMLbody = HTMLbody & "<td>" & foundRow.Cells(1, colMap("Detalhamento do Fator Motivador")).Value & "</td>"
     HTMLbody = HTMLbody & "</tr>"
     
     ' Close the table
@@ -426,7 +465,7 @@ Sub EnviarParaAprovação(Optional ShowOnMacroList As Boolean = False)
         .To = "emoretti@weg.net"
         .CC = "matheusp@weg.net"
         .BCC = ""
-        .Subject = "Aprovação de Custos - Provisão de Riscos - " & foundRow.Offset(0, 1).Value & " - " & foundRow.Offset(0, 2).Value
+        .Subject = "Aprovação de Custos - Provisão de Riscos - " & foundRow.Cells(1, colMap("Nome da Obra")).Value & " - " & foundRow.Cells(1, colMap("Cliente")).Value
         .HTMLbody = HTMLbody & strSignature
         .Display   'Use .Display to just open the email draft
         ' .Send       'Use .Send to send immediately
@@ -436,9 +475,9 @@ Sub EnviarParaAprovação(Optional ShowOnMacroList As Boolean = False)
     Set OutMail = Nothing
     Set OutApp = Nothing
     
-    foundRow.Offset(0, 24).Value = Date
+    foundRow.Cells(1, colMap("Data da Solicitação")).Value = Date
     
-    MsgBox "Email """ & "Aprovação de Custos - Provisão de Riscos - " & foundRow.Offset(0, 1).Value & " - " & foundRow.Offset(0, 2).Value & """ enviado com sucesso!", vbInformation
+    MsgBox "Email """ & "Aprovação de Custos - Provisão de Riscos - " & foundRow.Cells(1, colMap("Nome da Obra")).Value & " - " & foundRow.Cells(1, colMap("Cliente")).Value & """ enviado com sucesso!", vbInformation
     
 End Sub
 
@@ -466,10 +505,11 @@ Sub ClearForm(Optional ShowOnMacroList As Boolean = False)
         .Range("B10").Value = ""
         .Range("B14").Value = ""
         .Range("B18").Value = ""
-        .Range("B24").Value = ""
+        .Range("B22").Value = ""
         .Range("B28").Value = ""
         .Range("B32").Value = ""
         .Range("B36").Value = ""
+        .Range("B40").Value = ""
         
         ' Read column D values
         .Range("D6").Value = ""
@@ -490,3 +530,42 @@ Sub ClearForm(Optional ShowOnMacroList As Boolean = False)
         .Range("F22").Value = ""
     End With
 End Sub
+
+Public Function GetColumnHeadersMapping() As Object
+    Dim headers As Object
+    Set headers = CreateObject("Scripting.Dictionary")
+    
+    ' Add each header from the provided table to the dictionary,
+    ' mapping it to its column position.
+    headers.Add "ID", 1
+    headers.Add "Nome da Obra", 2
+    headers.Add "Cliente", 3
+    headers.Add "Tipo de Empreendimento", 4
+    headers.Add "PM Responsável", 5
+    headers.Add "PEP", 6
+    headers.Add "DR Atividade", 7
+    headers.Add "Valor MDS", 8
+    headers.Add "Valor MDS Líquido", 9
+    headers.Add "Custo COT", 10
+    headers.Add "Custo Atual Disponível", 11
+    headers.Add "Impacto no COT", 12
+    headers.Add "Saldo Residual", 13
+    headers.Add "Descrição Breve do Aditivo", 14
+    headers.Add "Justificativa do Aditivo", 15
+    headers.Add "Estágio da Obra", 16
+    headers.Add "Fase da Obra", 17
+    headers.Add "Fator Motivador", 18
+    headers.Add "Detalhamento do Fator Motivador", 19
+    headers.Add "Repasssar os custos ao cliente", 20
+    headers.Add "Justificativa do não repasse", 21
+    headers.Add "Prestador de Serviço (Quem executou)", 22
+    headers.Add "Outros Riscos", 23
+    headers.Add "Status", 24
+    headers.Add "Número da RFP", 25
+    headers.Add "Responsável Suprimentos", 26
+    headers.Add "Pedido de Compra", 27
+    headers.Add "Data da Solicitação", 28
+    headers.Add "Observações", 29
+    
+    Set GetColumnHeadersMapping = headers
+End Function
